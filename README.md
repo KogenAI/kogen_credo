@@ -3,7 +3,7 @@
 Credo checks for recurring generated-code mistakes and verification integrity:
 error handling, test quality, global state, structural limits and query regressions.
 
-This checkout is unreleased. Its version field is not evidence of a Hex release.
+Version **0.1.0**. Source: [KogenAI/kogen_credo](https://github.com/KogenAI/kogen_credo).
 
 ## Start here
 
@@ -12,13 +12,21 @@ This checkout is unreleased. Its version field is not evidence of a Hex release.
   project-specific parameters before enabling them in CI.
 - [Diff checks](docs/diff-checks.md): compare changed functions with their base.
 - [Migration guide](docs/migration.md): names moved from OptimumCredo.
-- [Changelog](CHANGELOG.md): unreleased source changes.
+- [Changelog](CHANGELOG.md): version history and release changes.
 
-## Use the local source
+## Installation
 
-Requires Credo 1.7.19 or newer in the 1.x series. When adopting the new library,
+Add the Hex dependency:
+
+```elixir
+{:kogen_credo, "~> 0.1.0", only: [:dev, :test], runtime: false}
+```
+
+Requires Credo 1.7.19 or newer in the 1.x series. When adopting this version,
 update Credo together with it; an older locked Credo does not provide the token
 metadata these checks need, and older releases cannot lint Elixir 1.20 reliably.
+
+For development with a sibling checkout:
 
 ```elixir
 defp deps do
@@ -81,8 +89,10 @@ or do not exist is analysed like any other, and no atom is created for a module 
 reads. Module parameters keep the form they always had: atoms for `broad_exceptions`,
 `codec_modules`, `ForbiddenCall` calls, `stub_exceptions`, `shared` and domain namespaces
 (a string is still rejected, so a typo cannot look like "nothing configured"); full-name strings
-for `repo_modules`. Repo names, function names and fields are compared by name and are
-never turned into atoms. `KogenCredo.Integrity.parse_config/1` returns modules
+for `repo_modules`. Repo names, function names and fields (including the diff CLI's
+`--sensitive-field`, `--cast-sensitive-field` and `--repo-name`) are compared by name and are
+never turned into atoms. Only `mix kogen.unused_public` handles real module atoms, because it
+reads installed BEAM debug information. `KogenCredo.Integrity.parse_config/1` returns modules
 written in a config as `KogenCredo.Integrity.ModuleRef` structs for the same reason.
 
 ## Framework boundaries and test scope

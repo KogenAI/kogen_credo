@@ -1,6 +1,7 @@
 defmodule KogenCredo.MixProject do
   use Mix.Project
 
+  @repo "https://github.com/KogenAI/kogen_credo"
   @version "0.1.0"
 
   @spec project() :: keyword()
@@ -18,6 +19,7 @@ defmodule KogenCredo.MixProject do
 
       # Docs
       name: "KogenCredo",
+      source_url: @repo,
       docs: [
         extras: [
           "README.md",
@@ -53,6 +55,7 @@ defmodule KogenCredo.MixProject do
   defp package do
     [
       licenses: ["MIT"],
+      links: %{"GitHub" => @repo},
       files: [
         "lib",
         "docs",
