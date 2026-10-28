@@ -1,17 +1,33 @@
 defmodule KogenCredo.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+
+  @spec project() :: keyword()
   def project do
     [
       app: :kogen_credo,
-      version: "0.1.0",
-      elixir: "~> 1.18",
+      version: @version,
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+
+      # Hex package
+      description: "Credo checks for AI-generated code and test-gate integrity",
+      package: package(),
+
+      # Docs
+      name: "KogenCredo",
+      docs: [
+        extras: ["README.md"],
+        main: "readme",
+        source_ref: "v#{@version}"
+      ]
     ]
   end
 
   # Run "mix help compile.app" to learn about applications.
+  @spec application() :: keyword()
   def application do
     [
       extra_applications: [:logger]
@@ -21,8 +37,15 @@ defmodule KogenCredo.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:credo, "~> 1.7"},
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      maintainers: ["Almir Sarajčić"]
     ]
   end
 end

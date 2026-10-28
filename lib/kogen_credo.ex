@@ -1,18 +1,7 @@
 defmodule KogenCredo do
   @moduledoc """
-  Documentation for `KogenCredo`.
+  Credo checks for AI-generated code and test-gate integrity.
+
+  The checks were moved here from `optimum_credo`. See the README for the list.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> KogenCredo.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end

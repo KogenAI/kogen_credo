@@ -10,6 +10,9 @@
 # Where third-party dependencies like ExDoc output generated docs.
 /doc/
 
+# Temporary files, for example, from tests.
+/tmp/
+
 # If the VM crashes, it generates a dump, let's ignore it too.
 erl_crash.dump
 
@@ -19,5 +22,3 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 kogen_credo-*.tar
 
-# Temporary files, for example, from tests.
-/tmp/
