@@ -10,6 +10,7 @@ This checkout is unreleased. Its version field is not evidence of a Hex release.
 - [Check catalog](docs/checks.md): detectors, defaults, limits and source links.
 - [Explicit configuration example](docs/configuration.md): select checks and supply
   project-specific parameters before enabling them in CI.
+- [Diff checks](docs/diff-checks.md): compare changed functions with their base.
 - [Migration guide](docs/migration.md): names moved from OptimumCredo.
 - [Changelog](CHANGELOG.md): unreleased source changes.
 
@@ -109,10 +110,13 @@ The checked-in self-lint policy (`mix credo --strict`) reports no findings. Pass
 test/format/compile success, says nothing about the precision of the detectors.
 
 Test violations, valid lookalikes, parameter changes and lexical scope. Run the
-suite across supported Elixir versions before publication.
+suite across supported Elixir versions before publication. New diff rules remain
+advisory until their precision is demonstrated on real history; unit tests alone
+are not that evidence.
 
 Folder map: `lib/kogen_credo/check/` owns Credo detectors;
-remaining library modules own shared
+`lib/kogen_credo/diff/` owns function comparison and reporting;
+`lib/mix/tasks/` owns command entry points; remaining library modules own shared
 analysis helpers and integrity checks; `test/` owns regression coverage; `docs/`
 owns the catalog and usage/migration details.
 

@@ -25,7 +25,8 @@ defmodule KogenCredo.MixProject do
           "LICENSE",
           "docs/configuration.md",
           "docs/checks.md",
-          "docs/migration.md"
+          "docs/migration.md",
+          "docs/diff-checks.md"
         ],
         main: "readme",
         source_ref: "v#{@version}"
