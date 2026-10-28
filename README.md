@@ -67,6 +67,11 @@ change. The library cannot establish that trust boundary by itself.
 mechanism: Credo can suppress its own checks. The separate integrity scan exists
 for enforcement outside Credo's suppression pipeline.
 
+`mix kogen.unused_public` reports public functions with no observed compiled
+caller. It is advisory by default and needs compiled debug information. Callbacks,
+entry points, external library consumers, dynamic dispatch and macros limit what
+static analysis can establish; read the task/module documentation before acting.
+
 ## Module names
 
 Analysed code names modules, it does not load them. Aliases, imports, `defmodule` nesting,
