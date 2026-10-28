@@ -129,6 +129,64 @@ defmodule KogenCredo.Check.Readability.JustifiedCoverageIgnoreTest do
     end)
   end
 
+  test "marker text inside strings and heredocs is not a comment" do
+    source = ~S'''
+    defmodule MyModule do
+      @doc """
+      # coveralls-ignore-next-line
+      # coveralls-ignore-start
+      """
+      def some_fn, do: "# coveralls-ignore-next-line"
+    end
+    '''
+
+    source
+    |> to_source_file("lib/my_module.ex")
+    |> run_check(JustifiedCoverageIgnore)
+    |> refute_issues()
+  end
+
+  test "a bare marker after a heredoc is still reported at its own line" do
+    source = ~S'''
+    defmodule MyModule do
+      @doc """
+      # coveralls-ignore-next-line
+      """
+      def some_fn do
+        # coveralls-ignore-next-line
+        :ok
+      end
+    end
+    '''
+
+    assert [issue] =
+             source
+             |> to_source_file("lib/my_module.ex")
+             |> run_check(JustifiedCoverageIgnore)
+
+    assert issue.line_no == 6
+  end
+
+  test "a bare marker trailing code is a real comment and is reported" do
+    "defmodule MyModule do\n  def f, do: :ok # coveralls-ignore-next-line\nend\n"
+    |> to_source_file("lib/my_module.ex")
+    |> run_check(JustifiedCoverageIgnore)
+    |> assert_issue()
+  end
+
+  test "unparsable source falls back to comment-looking lines" do
+    source_file =
+      Credo.SourceFile.parse(
+        "defmodule MyModule do\n  # coveralls-ignore-next-line\n  def f(\n",
+        "lib/my_module.ex"
+      )
+
+    assert source_file.status == :invalid
+
+    assert [issue] = JustifiedCoverageIgnore.run(source_file, [])
+    assert issue.line_no == 2
+  end
+
   defp iso_date_from_today(days) do
     Date.utc_today()
     |> Date.add(days)

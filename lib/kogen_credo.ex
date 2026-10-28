@@ -1,7 +1,11 @@
 defmodule KogenCredo do
   @moduledoc """
-  Credo checks for AI-generated code and test-gate integrity.
+  Credo checks for recurring generated-code mistakes and verification integrity.
 
-  The checks were moved here from `optimum_credo`. See the README for the list.
+  Select individual `KogenCredo.Check` modules in `.credo.exs`; the library does
+  not enable every policy automatically.
+
+  See the README, check catalog and migration guide for configuration and limits.
+  OptimumCredo remains an independent library for code-review conventions.
   """
 end

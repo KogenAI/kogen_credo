@@ -62,16 +62,21 @@ defmodule KogenCredo.Check.Warning.RuntimeEnvDevDefault do
   end
 
   defp traverse(ast, issues, issue_meta) do
-    case find_dev_default(ast, issue_meta) do
+    case find_dev_default(expand_pipe(ast), issue_meta) do
       nil -> {ast, issues}
       issue -> {ast, [issue | issues]}
     end
   end
 
+  # `"KEY" |> System.get_env("default")` is the same call.
+  defp expand_pipe({:|>, _, [key, {{:., _, [_, _]} = dot, meta, args}]}) when is_list(args),
+    do: {dot, meta, [key | args]}
+
+  defp expand_pipe(ast), do: ast
+
   # System.get_env("KEY", "default_string")
   defp find_dev_default(
-         {{:., meta, [{:__aliases__, _alias_meta, [:System]}, :get_env]}, _call_meta,
-          [_key_ast, default_ast]},
+         {{:., meta, [{:__aliases__, _, [:System]}, :get_env]}, _, [_, default_ast]},
          issue_meta
        )
        when is_binary(default_ast) do
@@ -85,7 +90,7 @@ defmodule KogenCredo.Check.Warning.RuntimeEnvDevDefault do
     end
   end
 
-  defp find_dev_default(_ast, _issue_meta), do: nil
+  defp find_dev_default(_, _), do: nil
 
   defp dev_machine_path?(string) do
     String.starts_with?(string, ["/Users/", "/home/", "~/"])

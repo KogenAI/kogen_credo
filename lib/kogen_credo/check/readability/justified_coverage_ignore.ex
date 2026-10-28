@@ -7,6 +7,11 @@ defmodule KogenCredo.Check.Readability.JustifiedCoverageIgnore do
 
   This check enables gradual phaseout of coverage ignores during audit cycles.
 
+  Markers are taken from the file's real comments (`Code.string_to_quoted_with_comments/2`), so
+  marker-looking text inside strings and heredocs is not reported. A comment trailing code on the
+  same line is a comment too and is checked. If the file does not parse, the check falls back to
+  scanning lines that start with `#`; in that mode a marker inside a heredoc can be reported.
+
   **Parameters**:
   - `allow_bare_until` (optional, ISO 8601 date string): Grace period for bare markers.
     Default: nil (no grace). Example: `"2026-05-26"` allows bare markers until that date.
@@ -49,8 +54,27 @@ defmodule KogenCredo.Check.Readability.JustifiedCoverageIgnore do
     issue_meta = IssueMeta.for(source_file, params)
 
     source_file
-    |> Credo.SourceFile.lines()
+    |> comment_lines()
     |> Enum.flat_map(&check_line(&1, issue_meta, cutoff_date))
+  end
+
+  defp comment_lines(source_file) do
+    source = Credo.SourceFile.source(source_file)
+
+    case Code.string_to_quoted_with_comments(source, columns: true, emit_warnings: false) do
+      {:ok, _, comments} ->
+        for %{line: line, text: text} <- comments, do: {line, text}
+
+      {:error, _} ->
+        for {line_no, line} <- Credo.SourceFile.lines(source_file),
+            comment_line?(line),
+            do: {line_no, line}
+    end
+  end
+
+  defp comment_line?(line) do
+    trimmed = String.trim_leading(line)
+    String.starts_with?(trimmed, "#")
   end
 
   defp check_line({line_no, line}, issue_meta, cutoff_date) do
@@ -85,8 +109,17 @@ defmodule KogenCredo.Check.Readability.JustifiedCoverageIgnore do
 
   defp parse_cutoff_date(date_str) when is_binary(date_str) do
     case Date.from_iso8601(date_str) do
-      {:ok, date} -> date
-      {:error, _reason} -> nil
+      {:ok, date} ->
+        date
+
+      {:error, _} ->
+        raise ArgumentError,
+              "allow_bare_until must be an ISO 8601 date string (\"2026-05-26\") or nil, got: #{inspect(date_str)}"
     end
+  end
+
+  defp parse_cutoff_date(other) do
+    raise ArgumentError,
+          "allow_bare_until must be an ISO 8601 date string (\"2026-05-26\") or nil, got: #{inspect(other)}"
   end
 end

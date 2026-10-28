@@ -76,7 +76,7 @@ defmodule KogenCredo.Check.Readability.EmptySetupBlock do
   end
 
   # setup context do <body> end  (with argument)
-  defp find_empty_setup({:setup, meta, [_arg, [do: body]]}, issue_meta) do
+  defp find_empty_setup({:setup, meta, [_, [do: body]]}, issue_meta) do
     if empty_body?(body) do
       format_issue(issue_meta,
         message: "Empty `setup` block — remove it or add real test setup.",
@@ -85,7 +85,7 @@ defmodule KogenCredo.Check.Readability.EmptySetupBlock do
     end
   end
 
-  defp find_empty_setup(_ast, _issue_meta), do: nil
+  defp find_empty_setup(_, _), do: nil
 
   # setup do end  →  nil
   defp empty_body?(nil), do: true
@@ -94,10 +94,10 @@ defmodule KogenCredo.Check.Readability.EmptySetupBlock do
   defp empty_body?(:ok), do: true
 
   # setup do end  →  {:__block__, [], []}
-  defp empty_body?({:__block__, _meta, []}), do: true
+  defp empty_body?({:__block__, _, []}), do: true
 
   # setup do {:ok, %{}} end
-  defp empty_body?({:ok, {:%{}, _meta, []}}), do: true
+  defp empty_body?({:ok, {:%{}, _, []}}), do: true
 
-  defp empty_body?(_body), do: false
+  defp empty_body?(_), do: false
 end

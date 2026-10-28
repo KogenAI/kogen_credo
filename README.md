@@ -1,73 +1,126 @@
 # KogenCredo
 
-Credo checks that catch AI slop and keep test gates honest: skipped tests, unexplained coverage ignores, developer-machine paths in runtime config and scaffolding with no purpose.
+Credo checks for recurring generated-code mistakes and verification integrity:
+error handling, test quality, global state, structural limits and query regressions.
 
-## Origin
+This checkout is unreleased. Its version field is not evidence of a Hex release.
 
-All four checks were written in [optimum_credo](https://github.com/optimumBA/optimum_credo) (0.4.0 and the uncommitted 0.4.1 work) and moved here, with their tests, under the `KogenCredo.Check.*` namespace. The split rule: a pattern found in model-written code, or one that defeats a gate, lives here; a style preference from human code review stays in optimum_credo. The two packages do not depend on each other.
+## Start here
 
-## Installation
+- [Check catalog](docs/checks.md): detectors, defaults, limits and source links.
+- [Explicit configuration example](docs/configuration.md): select checks and supply
+  project-specific parameters before enabling them in CI.
+- [Migration guide](docs/migration.md): names moved from OptimumCredo.
+- [Changelog](CHANGELOG.md): unreleased source changes.
 
-Add the `:kogen_credo` package to your `mix.exs` dependencies:
+## Use the local source
+
+Requires Credo 1.7.19 or newer in the 1.x series. When adopting the new library,
+update Credo together with it; an older locked Credo does not provide the token
+metadata these checks need, and older releases cannot lint Elixir 1.20 reliably.
 
 ```elixir
-def deps do
+defp deps do
   [
     {:kogen_credo, path: "../kogen_credo", only: [:dev, :test], runtime: false}
   ]
 end
 ```
 
-## Usage
-
-Enable the checks in your `.credo.exs`:
+Enable individual checks in `.credo.exs`:
 
 ```elixir
 %{
   configs: [
     %{
       name: "default",
-      requires: ["./deps/kogen_credo/lib/**/*.ex"],
-      checks: [
-        {KogenCredo.Check.Readability.EmptySetupBlock, []},
-        {KogenCredo.Check.Readability.JustifiedCoverageIgnore, []},
-        {KogenCredo.Check.Warning.RuntimeEnvDevDefault, []},
-        {KogenCredo.Check.Warning.SkippedTest, []}
-      ]
+      checks: %{
+        enabled: [
+          {KogenCredo.Check.Warning.SkippedTest, []},
+          {KogenCredo.Check.Readability.JustifiedCoverageIgnore, []},
+          {KogenCredo.Check.Warning.BroadRescue, []},
+          {KogenCredo.Check.Warning.RepoAllThenTrim, []}
+        ]
+      }
     }
   ]
 }
 ```
 
-## Available Checks
+Run `mix credo --strict` to include low-priority advice. Neither installing this
+library nor copying a package example establishes the right policy for an
+application. Review actual findings and configure namespaces, codecs, domain
+roots, allowed serial tests and resource groups where needed.
 
-### Readability
+OptimumCredo remains independent and owns code-review preferences. Enable both
+libraries where useful, choosing between overlapping policies deliberately.
 
-#### EmptySetupBlock
+## Integrity and static-analysis limits
 
-Detects empty `setup` blocks in test files (`setup do :ok end`, `setup do end`, `setup do {:ok, %{}} end`) that add noise without providing test setup value. File-scoped to `*_test.exs` files and `test/support/`.
+`KogenCredo.Integrity` provides suppression scanning and comparison with a golden
+Credo configuration. Parsing a configuration for comparison does not evaluate
+arbitrary Elixir. Store golden policy in a location the code-writing agent cannot
+change. The library cannot establish that trust boundary by itself.
 
-#### JustifiedCoverageIgnore
+`NoCredoDisable` is an advisory Credo detector, not a tamper-proof enforcement
+mechanism: Credo can suppress its own checks. The separate integrity scan exists
+for enforcement outside Credo's suppression pipeline.
 
-Enforces reason text on `coveralls-ignore-*` markers, so a coverage exclusion cannot be added without saying why. Supports an `allow_bare_until` param (an ISO date) that tolerates bare markers until that date, to ease migration.
+## Module names
 
-### Warning
+Analysed code names modules, it does not load them. Aliases, imports, `defmodule` nesting,
+`__MODULE__` and module parameters are resolved to dotted names (`MyApp.Repo`; Erlang modules keep
+their colon, `:ets`) and compared as strings, so code whose modules are not compiled, not loaded
+or do not exist is analysed like any other, and no atom is created for a module the analysis only
+reads. Module parameters keep the form they always had: atoms for `broad_exceptions`,
+`codec_modules`, `ForbiddenCall` calls, `stub_exceptions`, `shared` and domain namespaces
+(a string is still rejected, so a typo cannot look like "nothing configured"); full-name strings
+for `repo_modules`. Repo names, function names and fields are compared by name and are
+never turned into atoms. `KogenCredo.Integrity.parse_config/1` returns modules
+written in a config as `KogenCredo.Integrity.ModuleRef` structs for the same reason.
 
-#### RuntimeEnvDevDefault
+## Framework boundaries and test scope
 
-Detects `System.get_env("VAR", "/Users/...")` calls in `config/runtime.exs` where the default is a developer-machine path (`/Users/`, `/home/`, `~/`). Such defaults silently break on production servers. File-scoped to `config/runtime.exs`.
+`StringKeyAccess` recognises literal Phoenix/Oban/Ecto callback boundaries,
+connection fields, JSON query paths and directly encoded wire documents. Other
+wire adapters still need `codec_modules` or `codec_globs`. Recognition is static;
+it does not track values across arbitrary calls or variable shadowing.
 
-#### SkippedTest
+The `ForbiddenCall` async-test preset uses `only_async: true` rules and checks
+literal `async: true` modules. Explicit rules can inspect other scopes. `SizeLimits`
+excludes `~H` markup from function length; use `count_template_lines: true` to count it.
 
-Detects `@tag :skip`, `@tag skip: true`, `@moduletag :skip`, and related annotations that hide failing tests. Supports an `allow_with_comment: true` param to exempt tags that carry an inline explanatory comment.
+Checks that infer test state through custom case templates need a `case_templates`
+map, for example `%{"MyApp.DataCase" => :inherit, "MyAppWeb.ConnCase" => :inherit}`.
+Supply it to the relevant checks before treating zero findings as coverage of
+those templates. Serial-case exemptions should describe reviewed shared resources.
 
-## Testing
+## Development
 
-```bash
+```sh
+mix deps.get
 mix test
+mix format --check-formatted
+mix compile --warnings-as-errors
 mix credo --strict
 ```
 
-## License
+The checked-in self-lint policy (`mix credo --strict`) reports no findings. Passing it, like
+test/format/compile success, says nothing about the precision of the detectors.
 
-MIT. See `LICENSE`; the checks originate in optimum_credo and keep its copyright notice.
+Test violations, valid lookalikes, parameter changes and lexical scope. Run the
+suite across supported Elixir versions before publication.
+
+Folder map: `lib/kogen_credo/check/` owns Credo detectors;
+remaining library modules own shared
+analysis helpers and integrity checks; `test/` owns regression coverage; `docs/`
+owns the catalog and usage/migration details.
+
+## Origin and license
+
+`EmptySetupBlock`, `JustifiedCoverageIgnore`, `RuntimeEnvDevDefault` and
+`SkippedTest` originated in OptimumCredo and retain its copyright notice. Other
+checks grow from the retained Kogen research prototypes and original
+implementations. The two packages do not depend on one another.
+
+MIT. See [LICENSE](LICENSE).
